@@ -1,0 +1,93 @@
+
+
+Setting up and using RESTful APIs via the Microsoft Graph API for configuring an M365 tenant, automating tasks, and exporting reports involves several steps. Here’s a detailed guide to help you get started:
+
+1. Register an App in Azure AD
+1. Go to the Azure Portal.
+2. Navigate to Azure Active Directory > App registrations > New registration.
+3. Provide a name for your app and register it.
+4. Note down the Application (client) ID and Directory (tenant) ID.
+
+2. Configure API Permissions
+1. In the app registration, go to API permissions > Add a permission.
+2. Select Microsoft Graph > Application permissions.
+3. Add the necessary permissions based on what you need to access (e.g., `User.Read.All`, `Group.Read.All`, `Reports.Read.All`).
+4. Click Grant admin consent for the permissions.
+
+3. Generate a Client Secret
+1. Go to Certificates & secrets in your app registration.
+2. Click on New client secret, provide a description, and set an expiration period.
+3. Note down the client secret value.
+
+4. Authenticate and Get an Access Token
+Use the following PowerShell script to authenticate and get an access token:
+
+$tenantId = "your-tenant-id"
+$clientId = "your-client-id"
+$clientSecret = "your-client-secret"
+$body = @{
+    grant_type    = "client_credentials"
+    scope         = "https://graph.microsoft.com/.default"
+    client_id     = $clientId
+    client_secret = $clientSecret
+}
+$response = Invoke-RestMethod -Method Post -Uri "https://login.microsoftonline.com/$tenantId/oauth2/v2.0/token" -ContentType "application/x-www-form-urlencoded" -Body $body
+$accessToken = $response.access_token
+
+
+5. Make API Requests
+
+You can now use the access token to make requests to the Microsoft Graph API. Here are some examples:
+
+#Get User Information
+
+$uri = "https://graph.microsoft.com/v1.0/users"
+$headers = @{
+    Authorization = "Bearer $accessToken"
+}
+$response = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers
+$response.value
+
+
+#Create a New User
+
+$uri = "https://graph.microsoft.com/v1.0/users"
+$headers = @{
+    Authorization = "Bearer $accessToken"
+    "Content-Type" = "application/json"
+}
+$body = @{
+    accountEnabled = $true
+    displayName = "John Doe"
+    mailNickname = "johndoe"
+    userPrincipalName = "johndoe@yourdomain.com"
+    passwordProfile = @{
+        forceChangePasswordNextSignIn = $true
+        password = "YourPassword123!"
+    }
+} | ConvertTo-Json
+$response = Invoke-RestMethod -Method Post -Uri $uri -Headers $headers -Body $body
+$response
+
+
+6. Export Reports
+
+To export reports, you can use the Microsoft Graph Reports API. Here’s an example to get the Office 365 active users report:
+
+$uri = "https://graph.microsoft.com/v1.0/reports/getOffice365ActiveUserDetail(period='D7')"
+$headers = @{
+    Authorization = "Bearer $accessToken"
+}
+$response = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers
+$response | Out-File -FilePath "C:\path\to\export\Office365ActiveUserDetail.csv"
+
+
+Additional Resources
+
+- [Microsoft Graph API Documentation](https://learn.microsoft.com/en-us/graph/use-the-api)
+- [Graph Explorer](https://developer.microsoft.com/en-us/graph/rest-api) - A tool to test and explore the Graph API.
+- [Using Postman with Microsoft Graph](https://learn.microsoft.com/en-us/graph/use-postman) - For testing and exploring APIs with Postman[1](https://learn.microsoft.com/en-us/graph/use-the-api)[2](https://learn.microsoft.com/en-us/graph/use-postman)[3](https://developer.microsoft.com/en-us/graph/rest-api).
+
+These steps should help you set up and use RESTful APIs via the Microsoft Graph API for various configurations, automation tasks, and exporting reports in your M365 tenant. If you have any specific configurations or further questions, feel free to ask!
+
+

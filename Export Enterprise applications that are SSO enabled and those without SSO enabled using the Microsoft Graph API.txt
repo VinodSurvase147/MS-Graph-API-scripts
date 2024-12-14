@@ -1,0 +1,83 @@
+
+
+Steps to export Enterprise applications that are SSO enabled and those without SSO enabled using the Microsoft Graph API:
+
+1. **Register an App in Azure AD**:
+   - Go to the Azure Portal.
+   - Navigate to **Azure Active Directory** > **App registrations** > **New registration**.
+   - Provide a name for your app and register it.
+   - Note down the **Application (client) ID** and **Directory (tenant) ID**.
+
+2. **Configure API Permissions**:
+   - In the app registration, go to **API permissions** > **Add a permission**.
+   - Select **Microsoft Graph** > **Application permissions**.
+   - Add the following permissions: `Application.Read.All`, `Directory.Read.All`.
+   - Click **Grant admin consent** for the permissions.
+
+3. **Generate a Client Secret**:
+   - Go to **Certificates & secrets** in your app registration.
+   - Click on **New client secret**, provide a description, and set an expiration period.
+   - Note down the client secret value.
+
+4. **Authenticate and Get an Access Token**:
+
+
+   - Use the following PowerShell script to authenticate and get an access token:
+
+
+
+     $tenantId = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+     $clientId = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+     $clientSecret = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+     $body = @{
+         grant_type    = "client_credentials"
+         scope         = "https://graph.microsoft.com/.default"
+         client_id     = $clientId
+         client_secret = $clientSecret
+     }
+     $response = Invoke-RestMethod -Method Post -Uri "https://login.microsoftonline.com/$tenantId/oauth2/v2.0/token" -ContentType "application/x-www-form-urlencoded" -Body $body
+     $accessToken = $response.access_token
+
+
+
+5. **List Enterprise Applications**:
+
+   - Use the following PowerShell script to list all enterprise applications and filter them based on SSO configuration:
+  
+
+
+
+     $uri = "https://graph.microsoft.com/v1.0/servicePrincipals"
+     $headers = @{
+         Authorization = "Bearer $accessToken"
+     }
+     $servicePrincipals = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers
+     
+     $ssoEnabledApps = @()
+     $nonSsoEnabledApps = @()
+
+     foreach ($app in $servicePrincipals.value) {
+         if ($app.preferredSingleSignOnMode -ne $null) {
+             $ssoEnabledApps += [PSCustomObject]@{
+                 DisplayName = $app.displayName
+                 AppId = $app.appId
+                 SsoMode = $app.preferredSingleSignOnMode
+             }
+         } else {
+             $nonSsoEnabledApps += [PSCustomObject]@{
+                 DisplayName = $app.displayName
+                 AppId = $app.appId
+             }
+         }
+     }
+
+     $ssoEnabledApps | Export-Csv -Path "D:\ODB-URLs\sso_enabled_apps.csv" -NoTypeInformation
+     $nonSsoEnabledApps | Export-Csv -Path "D:\ODB-URLs\non_sso_enabled_apps.csv" -NoTypeInformation
+
+
+
+
+This script will export two CSV files: one for applications with SSO enabled and another for those without SSO enabled[1](https://learn.microsoft.com/en-us/answers/questions/312760/export-application-list-from-enterprise-applicatio)[2](https://learn.microsoft.com/en-us/answers/questions/79677/listing-all-enterprise-applications-configured-for)[3](https://morgantechspace.com/2018/04/get-list-of-registered-azure-ad-apps-powershell.html).
+
+If you have any questions or need further assistance, feel free to ask!
+

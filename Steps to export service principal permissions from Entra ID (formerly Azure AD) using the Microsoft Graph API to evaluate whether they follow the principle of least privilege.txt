@@ -1,0 +1,88 @@
+
+
+Steps to export service principal permissions from Entra ID (formerly Azure AD) using the Microsoft Graph API to evaluate whether they follow the principle of least privilege:
+
+1. Register an App in Azure AD
+1. Go to the Azure Portal.
+2. Navigate to Azure Active Directory > App registrations > New registration.
+3. Provide a name for your app and register it.
+4. Note down the Application (client) ID and Directory (tenant) ID.
+
+2. Configure API Permissions
+1. In the app registration, go to API permissions > Add a permission.
+2. Select Microsoft Graph > Application permissions.
+3. Add the following permissions: `Application.Read.All`, `Directory.Read.All`, `AppRoleAssignment.Read.All`.
+4. Click Grant admin consent for the permissions.
+
+3. Generate a Client Secret
+1. Go to Certificates & secrets in your app registration.
+2. Click on New client secret, provide a description, and set an expiration period.
+3. Note down the client secret value.
+
+4. Authenticate and Get an Access Token
+Use the following PowerShell script to authenticate and get an access token:
+
+
+
+$tenantId = "your-tenant-id"
+$clientId = "your-client-id"
+$clientSecret = "your-client-secret"
+$body = @{
+    grant_type    = "client_credentials"
+    scope         = "https://graph.microsoft.com/.default"
+    client_id     = $clientId
+    client_secret = $clientSecret
+}
+$response = Invoke-RestMethod -Method Post -Uri "https://login.microsoftonline.com/$tenantId/oauth2/v2.0/token" -ContentType "application/x-www-form-urlencoded" -Body $body
+$accessToken = $response.access_token
+
+
+
+5. Export Service Principal Permissions
+
+Use the following PowerShell script to export service principal permissions:
+
+
+
+$uri = "https://graph.microsoft.com/v1.0/servicePrincipals"
+$headers = @{
+    Authorization = "Bearer $accessToken"
+}
+$servicePrincipals = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers
+
+$servicePrincipalPermissions = @()
+
+foreach ($sp in $servicePrincipals.value) {
+    $appRoleAssignmentsUri = "https://graph.microsoft.com/v1.0/servicePrincipals/$($sp.id)/appRoleAssignments"
+    $appRoleAssignments = Invoke-RestMethod -Method Get -Uri $appRoleAssignmentsUri -Headers $headers
+
+    foreach ($assignment in $appRoleAssignments.value) {
+        $servicePrincipalPermissions += [PSCustomObject]@{
+            ServicePrincipalName = $sp.displayName
+            ServicePrincipalId = $sp.id
+            ResourceDisplayName = $assignment.resourceDisplayName
+            AppRoleId = $assignment.appRoleId
+            PrincipalDisplayName = $assignment.principalDisplayName
+            PrincipalId = $assignment.principalId
+        }
+    }
+}
+
+$servicePrincipalPermissions | Export-Csv -Path "C:\path\to\export\service_principal_permissions.csv" -NoTypeInformation
+
+
+
+6. Analyze Permissions for Least Privilege
+
+Once you have exported the permissions, you can analyze them to ensure they follow the principle of least privilege. Look for:
+- Excessive Permissions: Identify any service principals with more permissions than necessary.
+- Unused Permissions: Check if there are permissions that are not being used and can be removed.
+- High-Risk Permissions: Evaluate permissions that provide high levels of access and ensure they are justified.
+
+Additional Resources
+
+- Microsoft Graph API Documentation
+- Graph Explorer - A tool to test and explore the Graph API.
+
+These steps should help you export and analyze service principal permissions from Entra ID using the Microsoft Graph API[1](https://learn.microsoft.com/en-us/entra/architecture/service-accounts-principal)[2](https://www.michev.info/blog/post/5922/reporting-on-entra-id-integrated-applications-service-principals-and-their-permissions)[3](https://learn.microsoft.com/en-us/entra/identity-platform/app-objects-and-service-principals). If you have any specific configurations or further questions, feel free to ask!
+

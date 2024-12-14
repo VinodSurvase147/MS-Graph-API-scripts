@@ -1,0 +1,101 @@
+
+
+Steps to export service principal sign-ins and audit logs from Entra ID (formerly Azure AD) using the Microsoft Graph API:
+
+1. Register an App in Azure AD
+1. Go to the Azure Portal.
+2. Navigate to Azure Active Directory > App registrations > New registration.
+3. Provide a name for your app and register it.
+4. Note down the Application (client) ID and Directory (tenant) ID.
+
+2. Configure API Permissions
+1. In the app registration, go to API permissions > Add a permission.
+2. Select Microsoft Graph > Application permissions.
+3. Add the following permissions: `AuditLog.Read.All`, `Directory.Read.All`, `SignIn.Read.All`.
+4. Click Grant admin consent for the permissions.
+
+3. Generate a Client Secret
+1. Go to Certificates & secrets in your app registration.
+2. Click on New client secret, provide a description, and set an expiration period.
+3. Note down the client secret value.
+
+4. Authenticate and Get an Access Token
+Use the following PowerShell script to authenticate and get an access token:
+
+
+$tenantId = "your-tenant-id"
+$clientId = "your-client-id"
+$clientSecret = "your-client-secret"
+$body = @{
+    grant_type    = "client_credentials"
+    scope         = "https://graph.microsoft.com/.default"
+    client_id     = $clientId
+    client_secret = $clientSecret
+}
+$response = Invoke-RestMethod -Method Post -Uri "https://login.microsoftonline.com/$tenantId/oauth2/v2.0/token" -ContentType "application/x-www-form-urlencoded" -Body $body
+$accessToken = $response.access_token
+
+
+
+
+5. Export Service Principal Sign-Ins
+Use the following PowerShell script to export service principal sign-ins:
+
+
+$uri = "https://graph.microsoft.com/v1.0/auditLogs/signIns"
+$headers = @{
+    Authorization = "Bearer $accessToken"
+}
+$signIns = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers
+$servicePrincipalSignIns = $signIns.value | Where-Object { $_.appDisplayName -ne $null }
+
+$servicePrincipalSignIns | ForEach-Object {
+    [PSCustomObject]@{
+        AppDisplayName = $_.appDisplayName
+        AppId = $_.appId
+        UserPrincipalName = $_.userPrincipalName
+        ResourceDisplayName = $_.resourceDisplayName
+        ResourceId = $_.resourceId
+        IPAddress = $_.ipAddress
+        CreatedDateTime = $_.createdDateTime
+        Status = $_.status
+    }
+} | Export-Csv -Path "C:\path\to\export\service_principal_signins.csv" -NoTypeInformation
+
+
+
+6. Export Audit Logs
+
+Use the following PowerShell script to export audit logs:
+
+
+
+
+$uri = "https://graph.microsoft.com/v1.0/auditLogs/directoryAudits"
+$headers = @{
+    Authorization = "Bearer $accessToken"
+}
+$auditLogs = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers
+
+$auditLogs.value | ForEach-Object {
+    [PSCustomObject]@{
+        Id = $_.id
+        Category = $_.category
+        ActivityDisplayName = $_.activityDisplayName
+        ActivityDateTime = $_.activityDateTime
+        InitiatedBy = $_.initiatedBy.user.displayName
+        TargetResources = ($_.targetResources | ForEach-Object { $_.displayName }) -join ", "
+        Result = $_.result
+    }
+} | Export-Csv -Path "C:\path\to\export\audit_logs.csv" -NoTypeInformation
+
+
+
+
+Additional Resources
+
+- Microsoft Graph API Documentation
+- Graph Explorer - A tool to test and explore the Graph API.
+
+These steps should help you export service principal sign-ins and audit logs from Entra ID using the Microsoft Graph API[1](https://learn.microsoft.com/en-us/entra/identity/monitoring-health/concept-service-principal-sign-ins)[2](https://learn.microsoft.com/en-us/entra/identity/monitoring-health/howto-download-logs)[3](https://kaidojarvemets.com/retrieve-azure-ad-sign-in-logs-with-microsoft-graph-powershell-module/). If you have any specific configurations or further questions, feel free to ask!
+
