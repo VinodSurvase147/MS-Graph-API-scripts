@@ -1,0 +1,77 @@
+
+Scripts for changing group owners in Microsoft 365 using the Microsoft Graph PowerShell API.
+
+Prerequisites
+1. Install Microsoft Graph PowerShell Module:
+ 
+   Install-Module Microsoft.Graph -Scope CurrentUser
+
+2. Connect to Microsoft Graph:
+  
+   Connect-MgGraph -Scopes "Group.ReadWrite.All"
+ 
+
+Adding a Single Owner
+
+To add a single owner to a Microsoft 365 group, use the `New-MgGroupOwnerByRef` cmdlet.
+
+
+# Define the group ID and the user ID of the new owner
+$GroupId = "your-group-id"
+$UserId = "new-owner-user-id"
+
+# Create the owner object
+$Owner = @{
+    "@odata.id" = "https://graph.microsoft.com/v1.0/users/$UserId"
+}
+
+# Add the owner to the group
+New-MgGroupOwnerByRef -GroupId $GroupId -BodyParameter $Owner
+
+
+Adding Multiple Owners
+To add multiple owners, you can loop through a list of user IDs.
+
+
+# Define the group ID and the list of user IDs
+$GroupId = "your-group-id"
+$UserIds = @("user-id-1", "user-id-2", "user-id-3")
+
+# Loop through each user ID and add them as owners
+foreach ($UserId in $UserIds) {
+    $Owner = @{
+        "@odata.id" = "https://graph.microsoft.com/v1.0/users/$UserId"
+    }
+    New-MgGroupOwnerByRef -GroupId $GroupId -BodyParameter $Owner
+}
+
+
+Bulk Update from CSV
+To add owners in bulk from a CSV file, you can use the following script. Ensure your CSV file has a column named `UserId`.
+
+
+# Define the group ID and the path to the CSV file
+$GroupId = "your-group-id"
+$CsvPath = "C:\Path\To\Owners.csv"
+
+# Import the CSV file
+$OwnersFromCSV = Import-Csv -Path $CsvPath
+
+# Loop through each entry in the CSV and add them as owners
+foreach ($Owner in $OwnersFromCSV) {
+    $OwnerHash = @{
+        "@odata.id" = "https://graph.microsoft.com/v1.0/users/$($Owner.UserId)"
+    }
+    New-MgGroupOwnerByRef -GroupId $GroupId -BodyParameter $OwnerHash
+}
+
+
+Verifying the Changes
+To verify the newly added owners, you can use the `Get-MgGroupOwner` cmdlet.
+
+# Get the owners of the group
+Get-MgGroupOwner -GroupId $GroupId
+
+
+These scripts should help you manage group ownership efficiently. If you have any specific questions or need further customization, feel free to ask!
+
