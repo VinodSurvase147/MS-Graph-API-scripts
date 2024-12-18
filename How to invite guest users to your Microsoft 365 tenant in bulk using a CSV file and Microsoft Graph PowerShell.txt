@@ -1,0 +1,63 @@
+
+How to invite guest users to your Microsoft 365 tenant in bulk using a CSV file and Microsoft Graph PowerShell.
+
+Prerequisites
+1. Install the Microsoft Graph PowerShell module:
+ 
+   Install-Module Microsoft.Graph -Scope CurrentUser
+ 
+
+2. Connect to Microsoft Graph with the necessary permissions:
+
+   Connect-MgGraph -Scopes "User.Invite.All"
+
+
+Preparing the CSV File
+Create a CSV file (e.g., `guestUsers.csv`) with the following format:
+
+
+Email,DisplayName,Message
+guestuser1@example.com,Guest User One,Welcome to our organization!
+guestuser2@example.com,Guest User Two,Please join us for an exciting project!
+
+
+PowerShell Script to Invite Guest Users
+Here's the script to invite guest users in bulk:
+
+
+# Connect to Microsoft Graph
+Connect-MgGraph -Scopes "User.Invite.All"
+
+# Path to the CSV file
+$csvPath = "D:\WattsGuestUsers\WattsGuestusers1.csv"
+
+# Import the CSV file
+$guestUsers = Import-Csv -Path $csvPath
+
+foreach ($guestUser in $guestUsers) {
+    # Read guest user details from CSV
+    $guestUserEmail = $guestUser.Email
+    $invitedUserDisplayName = $guestUser.DisplayName
+    $invitedUserMessage = $guestUser.Message
+
+    # Create the invitation
+    $invitation = New-MgInvitation -InvitedUserEmailAddress $guestUserEmail -InvitedUserDisplayName $invitedUserDisplayName -InviteRedirectUrl "https://myapps.microsoft.com" -SendInvitationMessage -InvitedUserMessageInfo @{customizedMessageBody = $invitedUserMessage}
+
+    # Output the result
+    if ($invitation.Status -eq "PendingAcceptance") {
+        Write-Output "Invitation sent successfully to $guestUserEmail"
+    } else {
+        Write-Output "Failed to send invitation to $guestUserEmail"
+    }
+}
+
+
+
+
+Steps Breakdown
+1. Connect to Microsoft Graph: Ensure you have the necessary permissions to invite users.
+2. Prepare the CSV file: Include the email, display name, and a custom message for each guest user.
+3. Run the PowerShell script: This script reads the CSV file, processes each entry, and sends out the invitations.
+
+This script will help you efficiently invite multiple guest users to your Microsoft 365 tenant. If you encounter any issues or need further customization, feel free to ask![1](https://m365corner.com/m365-powershell/how-to-invite-guest-users-to-microsoft-365-using-graph-poweshell.html)[2](https://learn.microsoft.com/en-us/entra/external-id/b2b-quickstart-invite-powershell)[3](https://m365corner.com/m365-powershell/new-mginvitation.html)
+
