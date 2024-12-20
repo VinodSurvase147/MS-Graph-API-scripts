@@ -1,0 +1,55 @@
+Register the app with delegated permissions in Entra ID
+
+# Connect to Microsoft Graph with the necessary scopes
+Connect-MgGraph -Scopes "Application.ReadWrite.All", "DelegatedPermissionGrant.ReadWrite.All"
+
+# Define the required delegated permissions
+$requiredResourceAccess = @(
+    @{
+        "resourceAppId" = "00000003-0000-0000-c000-000000000000"  # Microsoft Graph
+        "resourceAccess" = @(
+            @{
+                "id" = "e1fe6dd8-ba31-4d61-89e7-88639da4683d"  # User.Read
+                "type" = "Scope"
+            },
+            @{
+                "id" = "5f8c59db-677d-491f-a6b8-5f174b11ec1d"  # Group.Read.All
+                "type" = "Scope"
+            },
+            @{
+                "id" = "06da0dbc-49e2-44d2-8312-53f166ab848a"  # Directory.Read.All
+                "type" = "Scope"
+            }
+        )
+    }
+)
+
+# Create the application
+$app = New-MgApplication -DisplayName "YourAppNameqwe" -RequiredResourceAccess $requiredResourceAccess
+
+# Create a service principal for the application
+$sp = New-MgServicePrincipal -AppId $app.AppId
+
+# Grant admin consent for the required permissions
+$graphSpId = (Get-MgServicePrincipal -Filter "appId eq '00000003-0000-0000-c000-000000000000'").Id
+
+foreach ($access in $requiredResourceAccess[0].resourceAccess) {
+    $existingGrant = Get-MgOAuth2PermissionGrant -Filter "clientId eq '$($sp.Id)' and resourceId eq '$graphSpId' and scope eq '$($access.id)'"
+    if (-not $existingGrant) {
+        New-MgOAuth2PermissionGrant -ClientId $sp.Id -ConsentType "AllPrincipals" -PrincipalId $null -ResourceId $graphSpId -Scope $access.id
+    } else {
+        Write-Host "Permission grant for scope $($access.id) already exists."
+    }
+}
+
+# Create a client secret for the application
+$clientSecret = Add-MgApplicationPassword -ApplicationId $app.Id
+
+# Output the application details
+$appDetails = @{
+    "ApplicationId" = $app.AppId
+    "ClientSecret" = $clientSecret.SecretText
+    "TenantId" = (Get-MgContext).TenantId
+}
+$appDetails | Format-List
+
