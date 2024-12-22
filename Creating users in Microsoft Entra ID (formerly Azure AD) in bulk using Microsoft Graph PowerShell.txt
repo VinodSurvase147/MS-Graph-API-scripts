@@ -1,0 +1,85 @@
+
+
+Creating users in Microsoft Entra ID (formerly Azure AD) in bulk using Microsoft Graph PowerShell involves several steps. Here's a detailed guide to help you through the process:
+
+Step 1: Install Microsoft Graph PowerShell Module
+First, you need to install the Microsoft Graph PowerShell module. Open PowerShell as an administrator and run the following commands:
+
+
+Install-Module Microsoft.Graph -Force
+Install-Module Microsoft.Graph.Beta -AllowClobber -Force
+
+
+Step 2: Connect to Microsoft Graph
+Next, connect to Microsoft Graph using the `Connect-MgGraph` cmdlet:
+
+
+Connect-MgGraph -Scopes "User.ReadWrite.All"
+
+
+Step 3: Prepare the CSV File
+Create a CSV file with the necessary user details. The CSV file should have the following columns:
+
+- DisplayName
+- MailNickname
+- UserPrincipalName
+- Password
+- AccountEnabled
+
+Here's an example of how your CSV file might look:
+
+
+DisplayName,MailNickname,UserPrincipalName,Password,AccountEnabled
+John Doe,john.doe,john.doe@yourdomain.com,P@ssw0rd!,true
+Jane Smith,jane.smith,jane.smith@yourdomain.com,P@ssw0rd!,true
+
+
+Step 4: Create the PowerShell Script
+Create a PowerShell script to read the CSV file and create users in Entra ID. Save the following script as `Add-NewEntraIDUsers.ps1`:
+
+
+# Import the CSV file
+$users = Import-Csv -Path "C:\path\to\your\users.csv"
+
+# Loop through each user in the CSV file
+foreach ($user in $users) {
+    # Create password profile
+    $PasswordProfile = @{
+        Password = $user.Password
+        ForceChangePasswordNextSignIn = $true
+        ForceChangePasswordNextSignInWithMfa = $true
+    }
+
+    # Create user parameters
+    $UserParams = @{
+        DisplayName = $user.DisplayName
+        MailNickname = $user.MailNickname
+        UserPrincipalName = $user.UserPrincipalName
+        PasswordProfile = $PasswordProfile
+        AccountEnabled = [System.Convert]::ToBoolean($user.AccountEnabled)
+    }
+
+    # Create the user
+    New-MgUser @UserParams
+}
+
+
+
+Step 5: Run the Script
+
+Run the script in PowerShell to create the users:
+
+.\Add-NewEntraIDUsers.ps1
+
+
+Step 6: Verify the Users
+After running the script, you can verify that the users have been created in the Microsoft Entra admin center or by using the following PowerShell command:
+
+
+Get-MgUser -All
+
+
+This process will help you efficiently create multiple users in Microsoft Entra ID using a CSV file and PowerShell[1](https://www.anoopcnair.com/create-microsoft-entra-id-users-with-powershell/)[2](https://www.alitajran.com/create-microsoft-entra-id-users/)[3](https://learn.microsoft.com/en-us/powershell/module/microsoft.graph.users/new-mguser?view=graph-powershell-1.0).
+
+If you have any questions or run into issues, feel free to ask!
+
