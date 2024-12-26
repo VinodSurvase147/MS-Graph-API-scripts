@@ -1,0 +1,45 @@
+
+
+Export devices from Entra ID (formerly Azure AD) using the Microsoft Graph API. This script will retrieve all device attributes and export them to a CSV file.
+
+Prerequisites
+1. Install the Microsoft Graph PowerShell SDK:
+  
+   Install-Module Microsoft.Graph -Scope CurrentUser
+ 
+
+2. Connect to Microsoft Graph:
+ 
+   Connect-MgGraph -Scopes "Device.Read.All"
+
+
+Script to Export Devices
+
+# Connect to Microsoft Graph
+Connect-MgGraph -Scopes "Device.Read.All"
+
+# Retrieve all devices
+$devices = Get-MgDevice -All
+
+# Select all attributes
+$deviceAttributes = $devices | Select-Object *
+
+# Export to CSV
+$deviceAttributes | Export-Csv -Path "C:\Path\To\Your\ExportedDevices.csv" -NoTypeInformation
+
+Write-Output "Devices exported successfully to C:\Path\To\Your\ExportedDevices.csv"
+
+
+Explanation
+1. Install the Microsoft Graph SDK: This command installs the necessary module to interact with Microsoft Graph.
+2. Connect to Microsoft Graph: This command authenticates your session with the required permissions to read device data.
+3. Retrieve all devices: The `Get-MgDevice -All` command fetches all devices from Entra ID.
+4. Select all attributes: The `Select-Object *` command selects all attributes of the devices.
+5. Export to CSV: The `Export-Csv` command exports the device data to a CSV file at the specified path.
+
+Additional Notes
+- Ensure you have the necessary permissions in Azure AD to read device data.
+- Modify the path in the `Export-Csv` command to your desired export location.
+
+Feel free to ask if you need further customization or have any questions!
+
