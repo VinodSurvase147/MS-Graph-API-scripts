@@ -1,0 +1,23 @@
+Steps to Delete M365 group and keep the SharePoint site associated to it
+
+To install MS Graph PowerShell module if its not installed already 
+ 
+Install-Module -Name Microsoft.Graph -Scope CurrentUser
+
+To Connect to MS Graph via PowerShell with admin credentials
+
+Connect-MgGraph -Scopes "Group.ReadWrite.All"
+
+Get the group ID from Entra ID anf then add/map here and then run below cmdlets one time and it will delete the M365 group for you.
+
+# Replace with the Group ID of the M365 Group
+$groupId = "5ba05f5a-3611-471b-9134-bddfd53513f6"
+
+# Remove the Group
+Remove-MgGroup -GroupId $groupId
+
+TO check if SharePoint site is remained or not 
+
+#You need to get the tenant URL and it here to run and you will get the site URL and details.
+$siteId = "msavnds.sharepoint.com:/sites/ClassicTest"
+Get-MgSite -SiteId $siteId
